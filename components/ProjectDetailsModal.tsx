@@ -13,6 +13,7 @@ interface ProjectDetailsModalProps {
   onUpload: (category: Category, project: string) => void;
   onDelete: (url: string) => void;
   customCategories?: Record<string, { label: string; icon: string }>;
+  onRenameSuccess?: () => void;
 }
 
 export default function ProjectDetailsModal({
@@ -24,11 +25,22 @@ export default function ProjectDetailsModal({
   onUpload,
   onDelete,
   customCategories,
+  onRenameSuccess,
 }: ProjectDetailsModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedAll, setCopiedAll] = useState(false);
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+
+  // Renaming & Deletion States
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(
+    project
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ")
+  );
+  const [loadingState, setLoadingState] = useState(false);
 
   const displayName = project
     .split("-")
@@ -66,12 +78,14 @@ export default function ProjectDetailsModal({
     )
       return;
 
+    setLoadingState(true);
     for (const url of Array.from(selectedUrls)) {
       await onDelete(url);
     }
     alert("Selected images deleted successfully!");
     setIsSelectMode(false);
     setSelectedUrls(new Set());
+    setLoadingState(false);
   };
 
   const toggleSelectImage = (url: string) => {
@@ -92,6 +106,66 @@ export default function ProjectDetailsModal({
     }
   };
 
+  const handleDeleteFolder = async () => {
+    if (
+      !confirm(
+        `⚠️ WARNING: Are you sure you want to permanently delete the entire folder "${displayName}" and all its ${images.length} images?\nThis action CANNOT be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setLoadingState(true);
+    try {
+      for (const img of images) {
+        await onDelete(img.url);
+      }
+      alert(`Folder "${displayName}" has been deleted successfully!`);
+      onClose();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete all assets in folder.");
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
+  const handleRenameFolder = async () => {
+    if (!editedName.trim() || editedName.trim() === displayName) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setLoadingState(true);
+    try {
+      const res = await fetch("/api/rename-project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldCategory: category,
+          oldProject: project,
+          newProject: editedName.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Rename failed");
+      }
+
+      alert(`Folder renamed successfully to "${editedName.trim()}"!`);
+      setIsEditingName(false);
+      if (onRenameSuccess) {
+        onRenameSuccess();
+      }
+      onClose();
+    } catch (e: any) {
+      alert(`Error renaming folder: ${e.message}`);
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
   const catDetails = getCategoryDetails(category, customCategories);
 
   return (
@@ -104,18 +178,73 @@ export default function ProjectDetailsModal({
 
       {/* Panel container */}
       <div className="relative z-10 w-full max-w-6xl h-[85vh] bg-[#0c0c10] border border-white/5 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up glass-panel">
+        
+        {/* Loading Spinner Overlay */}
+        {loadingState && (
+          <div className="absolute inset-0 z-40 bg-[#060608]/85 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
+            <div className="w-12 h-12 border-2 border-[#e8c97e]/20 border-t-[#e8c97e] rounded-full animate-spin mb-4" />
+            <p className="text-[#e8c97e] text-xs font-bold uppercase tracking-widest font-mono">
+              Processing Assets on Vercel…
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 border-b border-white/5 bg-white/[0.01]">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-white font-extrabold text-xl tracking-tight leading-none display-font luxury-text-glow">
-                {displayName}
-              </h2>
+              {isEditingName ? (
+                /* Inline Rename Input */
+                <div className="flex items-center gap-1.5 animate-fade-in">
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRenameFolder();
+                      if (e.key === "Escape") setIsEditingName(false);
+                    }}
+                    autoFocus
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-base font-bold text-white focus:outline-none focus:border-[#e8c97e] placeholder-white/20"
+                  />
+                  <button
+                    onClick={handleRenameFolder}
+                    className="w-8 h-8 rounded-xl bg-[#e8c97e] text-black font-bold flex items-center justify-center hover:bg-[#f0d898] transition-colors cursor-pointer"
+                    title="Confirm Rename"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditedName(displayName);
+                      setIsEditingName(false);
+                    }}
+                    className="w-8 h-8 rounded-xl bg-white/5 border border-white/5 text-white/50 flex items-center justify-center hover:text-white transition-colors cursor-pointer"
+                    title="Cancel"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                /* Static Display Name with Edit Button */
+                <div className="flex items-center gap-2 group/title">
+                  <h2 className="text-white font-extrabold text-xl tracking-tight leading-none display-font luxury-text-glow">
+                    {displayName}
+                  </h2>
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="w-7 h-7 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-white/40 hover:text-[#e8c97e] hover:bg-[#e8c97e]/10 transition-all opacity-0 group-hover/title:opacity-100 focus:opacity-100 cursor-pointer"
+                    title="Rename Folder"
+                  >
+                    ✏️
+                  </button>
+                </div>
+              )}
               <span className="text-[9px] uppercase tracking-widest font-bold px-3 py-1 rounded-full bg-white/5 text-white/70 border border-white/10 shrink-0">
                 {catDetails.icon} {catDetails.label}
               </span>
             </div>
-            <p className="text-white/40 text-[11px] mt-2 font-semibold">
+            <p className="text-white/40 text-[11px] mt-2.5 font-semibold">
               {images.length} image{images.length !== 1 ? "s" : ""} ·{" "}
               {formatBytes(totalSize)} total size
             </p>
@@ -137,6 +266,13 @@ export default function ProjectDetailsModal({
               }`}
             >
               {copiedAll ? "Copied ✓" : "Copy All URLs"}
+            </button>
+            <button
+              onClick={handleDeleteFolder}
+              className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-bold transition-all cursor-pointer"
+              title="Delete Entire Folder"
+            >
+              🗑 Delete Folder
             </button>
             <button
               onClick={onClose}

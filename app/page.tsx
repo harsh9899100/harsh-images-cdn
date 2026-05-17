@@ -9,6 +9,11 @@ import Lightbox from "@/components/Lightbox";
 import ProjectDetailsModal from "@/components/ProjectDetailsModal";
 
 export default function Home() {
+  // Passcode authentication states
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState(false);
+
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
@@ -34,6 +39,27 @@ export default function Home() {
     images: ProjectImage[];
     index: number;
   } | null>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const isAuth = localStorage.getItem("cdn_is_authenticated");
+    if (isAuth === "true") {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const handleUnlock = () => {
+    if (passwordInput === "203829") {
+      localStorage.setItem("cdn_is_authenticated", "true");
+      setIsAuthenticated(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+      setTimeout(() => setAuthError(false), 500);
+    }
+  };
 
   // Load custom categories from localStorage on mount
   useEffect(() => {
@@ -184,6 +210,51 @@ export default function Home() {
       images: imgs,
     };
   }, [selectedProjectKey, grouped]);
+
+  if (isAuthenticated === null) {
+    return <div className="min-h-screen bg-[#060608]" />;
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <div className="min-h-screen bg-[#060608] flex items-center justify-center p-4 relative overflow-hidden text-white">
+        {/* Dynamic background glowing orbs */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[#e8c97e]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-500/[0.015] rounded-full blur-[100px] pointer-events-none" />
+
+        <div className={`w-full max-w-sm glass-panel p-8 rounded-3xl text-center shadow-2xl relative z-10 transition-all ${authError ? "animate-shake border-red-500/30" : "border-white/5"}`}>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#e8c97e] to-[#c5a254] flex items-center justify-center text-black font-black text-xl shadow-[0_0_25px_rgba(232,201,126,0.15)] mx-auto mb-5 animate-pulse">
+            ◈
+          </div>
+          <h2 className="text-white font-extrabold text-lg tracking-widest uppercase display-font luxury-text-glow">
+            AURUM CDN
+          </h2>
+          <p className="text-white/35 text-[10px] tracking-wider uppercase font-bold mt-1.5 font-mono">
+            Secured Asset Terminal
+          </p>
+
+          <div className="mt-8 space-y-4">
+            <div className="relative">
+              <input
+                type="password"
+                placeholder="Enter Terminal Key"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+                className={`w-full bg-white/[0.02] border rounded-2xl px-5 py-3.5 text-center text-sm text-white placeholder-white/20 focus:outline-none transition-all duration-300 ${authError ? "border-red-500/30 focus:border-red-500 bg-red-500/[0.01]" : "border-white/5 focus:border-[#e8c97e]/40 focus:bg-white/[0.04]"}`}
+              />
+            </div>
+            <button
+              onClick={handleUnlock}
+              className="w-full py-3.5 rounded-2xl btn-aurum text-xs font-bold tracking-widest uppercase hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+            >
+              Unlock Terminal
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-[#f3f4f6]">
@@ -544,6 +615,7 @@ export default function Home() {
             setShowUpload(true);
           }}
           onDelete={handleDelete}
+          onRenameSuccess={() => fetchImages()}
         />
       )}
 
