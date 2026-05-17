@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["real-estate", "portfolio"].includes(category)) {
+    if (typeof category !== "string" || !category.trim()) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
 
