@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ImageCDN — Vercel Blob Storage",
-  description: "Project-based image CDN powered by Vercel Blob",
+  title: "Aurum CDN - Dynamic Storage Studio",
+  description: "A luxury, hyper-premium image CDN dashboard developed by Harsh Patel, powered by Vercel Blob Storage.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -13,7 +16,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
+

@@ -1,16 +1,16 @@
-# ImageCDN — Vercel Blob Storage
+# ImageCDN - Vercel Blob Storage
 
 A Next.js CDN dashboard for managing project-based image uploads using Vercel Blob Storage.
 
 ## Features
 
-- 📁 **Project-based organization** — images stored under `real-estate/<project>/` or `portfolio/<project>/`
+- 📁 **Project-based organization** - images stored under `real-estate/<project>/` or `portfolio/<project>/`
 - ⬆️ **Multi-file upload** with drag-and-drop
 - 🖼️ **Lightbox viewer** with one-click CDN URL copy
 - 🗑️ **Delete** images directly from the UI
 - 🔍 **Search & filter** by category or project name
-- 📊 **Stats dashboard** — total images, project count per category
-- 🌐 **Edge API routes** — fast globally
+- 📊 **Stats dashboard** - total images, project count per category
+- 🌐 **Edge API routes** - fast globally
 
 ## Blob Path Structure
 
@@ -64,7 +64,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-> **Note:** You need a real `BLOB_READ_WRITE_TOKEN` even locally — Vercel Blob has no local emulator. Use a dev blob store.
+> **Note:** You need a real `BLOB_READ_WRITE_TOKEN` even locally - Vercel Blob has no local emulator. Use a dev blob store.
 
 ## API Routes
 

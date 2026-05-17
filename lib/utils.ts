@@ -6,7 +6,8 @@ export function buildBlobPath(
   fileName: string
 ): string {
   const sanitizedProject = project.trim().toLowerCase().replace(/\s+/g, "-");
-  return `${category}/${sanitizedProject}/${fileName}`;
+  const sanitizedCategory = category.trim().toLowerCase().replace(/\s+/g, "-");
+  return `${sanitizedCategory}/${sanitizedProject}/${fileName}`;
 }
 
 export function parseBlobPathname(pathname: string): {
@@ -17,7 +18,6 @@ export function parseBlobPathname(pathname: string): {
   const parts = pathname.split("/");
   if (parts.length < 3) return null;
   const [category, project, ...rest] = parts;
-  if (category !== "real-estate" && category !== "portfolio") return null;
   return {
     category: category as Category,
     project,
@@ -47,7 +47,30 @@ export function groupImagesByProject(
   );
 }
 
-export const CATEGORIES: { value: Category; label: string; icon: string }[] = [
+export const DEFAULT_CATEGORIES: { value: Category; label: string; icon: string }[] = [
   { value: "real-estate", label: "Real Estate", icon: "🏠" },
   { value: "portfolio", label: "Portfolio", icon: "🎨" },
 ];
+
+export function getCategoryDetails(
+  value: string,
+  customCategories?: Record<string, { label: string; icon: string }>
+): { label: string; icon: string } {
+  const foundDefault = DEFAULT_CATEGORIES.find((c) => c.value === value);
+  if (foundDefault) return foundDefault;
+
+  if (customCategories && customCategories[value]) {
+    return customCategories[value];
+  }
+
+  // Fallback formatter
+  const formattedLabel = value
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return {
+    label: formattedLabel,
+    icon: "📂",
+  };
+}
+

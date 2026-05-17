@@ -1,4 +1,4 @@
-export type Category = "real-estate" | "portfolio";
+export type Category = string;
 
 export interface ProjectImage {
   url: string;
@@ -22,3 +22,4 @@ export interface BlobMetadata {
   fileName: string;
   uploadedAt: string;
 }
+
