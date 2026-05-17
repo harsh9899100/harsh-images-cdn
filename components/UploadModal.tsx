@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Category } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ interface UploadModalProps {
   defaultProject?: string;
   existingCategories: { value: string; label: string; icon: string }[];
   onAddCustomCategory: (value: string, label: string, icon: string) => void;
+  existingImages?: { category: string; project: string }[];
 }
 
 export default function UploadModal({
@@ -20,6 +21,7 @@ export default function UploadModal({
   defaultProject,
   existingCategories,
   onAddCustomCategory,
+  existingImages,
 }: UploadModalProps) {
   const [category, setCategory] = useState<Category>(
     defaultCategory ?? (existingCategories[0]?.value || "real-estate")
@@ -35,6 +37,21 @@ export default function UploadModal({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatEmoji, setNewCatEmoji] = useState("📂");
+
+  const suggestedProjects = useMemo(() => {
+    if (!existingImages) return [];
+    const set = new Set<string>();
+    existingImages.forEach((img) => {
+      if (img.category === category) {
+        const displayName = img.project
+          .split("-")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        set.add(displayName);
+      }
+    });
+    return Array.from(set);
+  }, [existingImages, category]);
 
   const addFiles = useCallback((incoming: FileList | null) => {
     if (!incoming) return;
@@ -203,6 +220,21 @@ export default function UploadModal({
               disabled={uploading}
               className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#e8c97e]/40 focus:bg-white/[0.04] transition-all"
             />
+            {suggestedProjects.length > 0 && (
+              <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] uppercase tracking-wider text-white/25 font-bold mr-1">Existing:</span>
+                {suggestedProjects.map((pName) => (
+                  <button
+                    key={pName}
+                    type="button"
+                    onClick={() => setProject(pName)}
+                    className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 hover:border-[#e8c97e]/30 hover:text-[#e8c97e] text-[10px] font-bold text-white/50 transition-all cursor-pointer"
+                  >
+                    {pName}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Drop zone */}

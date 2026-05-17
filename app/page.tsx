@@ -226,7 +226,9 @@ export default function Home() {
 
             <button
               onClick={() => {
-                setUploadDefaults({});
+                setUploadDefaults({
+                  category: activeCategory !== "all" ? activeCategory : undefined
+                });
                 setShowUpload(true);
               }}
               className="flex items-center gap-2 px-6 py-3 btn-aurum rounded-2xl font-bold text-xs hover:scale-[1.02] transition-all cursor-pointer"
@@ -518,6 +520,7 @@ export default function Home() {
           onAddCustomCategory={handleAddCustomCategory}
           onClose={() => setShowUpload(false)}
           onUploaded={() => fetchImages()}
+          existingImages={images}
         />
       )}
 
